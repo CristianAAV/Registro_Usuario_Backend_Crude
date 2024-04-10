@@ -1,0 +1,75 @@
+version: '3'
+services:
+  # Espacio para tu apigateway
+  nginx:
+    image: nginx:latest
+    ports:
+      - 5000:5000
+    volumes:
+        - ./api-gateway/nginx-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+        - registro_usuario
+        - consulta_usuario
+    networks:
+      network:
+
+  # Servidor cola de registro de usuarios
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      network:
+
+  # Servidor base de datos de usuarios
+  db_usuario:
+    build: 
+      context: ./db_usuario
+    ports:
+      - "5004:5004"
+    environment:
+      FLASK_APP: app
+      FLASK_DEBUG: 1
+      FLASK_ENV: development
+    networks:
+      network:
+
+  # Servidor Autenticador
+  autenticador:
+    build: autenticador
+    volumes:
+      - ./autenticador:/app
+    ports:
+      - "5001:5001"
+    networks:
+      network:
+
+  # Servidor principal con codigo de servicio de registro de usuarios
+  registro_usuario:
+    build: registro_usuario
+    volumes:
+      - ./registro_usuario:/app
+    ports:
+      - "5002:5002"
+    depends_on:
+      - db_usuario
+      - rabbitmq
+    networks:
+      network:
+
+  # Servidor consulta de usuarios
+  consulta_usuario:
+    build: consulta_usuario
+    volumes:
+      - ./consulta_usuario:/app
+    ports:
+      - "5003:5003"
+    depends_on:
+      - db_usuario
+      - rabbitmq   
+    networks:
+      network:   
+      
+networks:
+  network:

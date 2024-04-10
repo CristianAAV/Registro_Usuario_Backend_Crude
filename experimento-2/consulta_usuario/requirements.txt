@@ -1,0 +1,4 @@
+Flask
+Celery
+requests
+flask_jwt_extended
